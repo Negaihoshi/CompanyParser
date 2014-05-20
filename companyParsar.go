@@ -94,9 +94,11 @@ func main() {
 		if zoneregRegexpErr != nil {
 			log.Fatal(zoneregRegexpErr)
 		}
+
 		result := locationreg.FindStringSubmatch(line)
 		for num, v := range result {
 			if num/2 == 1 {
+				fmt.Println(v)
 				result2 := zonereg.FindStringSubmatch(v)
 				for num2, v2 := range result2 {
 					if num2/1 == 1 {
@@ -113,5 +115,6 @@ func main() {
 	if err := br.Err(); err != nil {
 		log.Fatal(err)
 	}
+	file.Close()
 
 }
