@@ -80,10 +80,6 @@ func main() {
 
 	for br.Scan() {
 
-		if err != nil {
-			break
-		}
-
 		line := br.Text()
 
 		locationreg, regexpErr := regexp.Compile(`(^\d+).+地":"([^\s]+)","登`)
