@@ -6,7 +6,9 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"runtime"
 	"syscall"
+	"time"
 	//"strings"
 )
 
@@ -259,10 +261,16 @@ func LoctionParser(location, readline string) string {
 }
 
 func main() {
-	file, err := os.Open("00000000.json") // For read access.
+	file, err := os.Open("test.json") // For read access.
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	//開始時間
+	start := time.Now()
+	CoreNumber := runtime.NumCPU()
+	//runtime.GOMAXPROCS(CoreNumber)
+	//UserCore := make(chan float64, CoreNumber)
 
 	//br := bufio.NewReader(file)
 	br := bufio.NewScanner(file)
@@ -300,7 +308,7 @@ func main() {
 				for num2, v2 := range result2 {
 					if num2/1 == 1 {
 						//fmt.Printf("%s\n", v2)
-						LoctionParser(v2, line)
+						go LoctionParser(v2, line)
 					}
 				}
 				//fmt.Printf("%s\n", v)
@@ -315,4 +323,9 @@ func main() {
 	}
 	file.Close()
 
+	end := time.Now()
+
+	//花費時間
+	fmt.Printf("Use Core Number: %v\n", CoreNumber)
+	fmt.Printf("Spend Time: %vs\n", end.Sub(start).Seconds())
 }
