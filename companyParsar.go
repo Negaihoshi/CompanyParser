@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"runtime"
+	//"runtime"
 	"strconv"
 	"syscall"
 	"time"
@@ -14,7 +14,7 @@ import (
 )
 
 //Parse District
-func LoctionParser(location string, readline string, c chan int) string {
+func LocationParser(location string, readline string /*, c chan int*/) string {
 
 	if location == "臺北市" {
 		taipeiCityFile, error := os.OpenFile("data/Taipei_City.json", syscall.O_RDWR|syscall.O_APPEND, 0660)
@@ -257,6 +257,7 @@ func LoctionParser(location string, readline string, c chan int) string {
 		writeElse.WriteString(readline + "\n")
 		writeElse.Flush()
 		elseFile.Close()
+		fmt.Println("-----------------------------")
 	}
 
 	return location
@@ -268,7 +269,8 @@ func main() {
 	start := time.Now()
 
 	fileTitle := "0000000.json"
-	for i := 0; i < 3; i++ {
+	count := 0
+	for i := 0; i < 10; i++ {
 		fileString := strconv.Itoa(i) + fileTitle
 
 		file, err := os.Open(fileString) // For read access.
@@ -276,19 +278,19 @@ func main() {
 			log.Fatal(err)
 		}
 
-		CoreNumber := runtime.NumCPU()
-		fmt.Printf("Use Core Number: %v\n", CoreNumber)
-		runtime.GOMAXPROCS(CoreNumber)
-		UserCore := make(chan int, CoreNumber)
+		//CoreNumber := runtime.NumCPU()
+		//fmt.Printf("Use Core Number: %v\n", CoreNumber)
+		//runtime.GOMAXPROCS(CoreNumber)
+		//UserCore := make(chan int, CoreNumber)
 
 		//br := bufio.NewReader(file)
 		br := bufio.NewScanner(file)
 
-		count := 0
 		for br.Scan() {
 
 			line := br.Text()
-
+			count++
+			fmt.Print(count, "=>")
 			//初始化 Regexp
 			match, _ := regexp.MatchString("分公司", line)
 			locationreg, regexpErr := regexp.Compile(`(^\d+).+地":"([^\s]+)","登`)
@@ -300,8 +302,6 @@ func main() {
 				log.Fatal(zoneregRegexpErr)
 			}
 
-			count++
-			fmt.Println(count)
 			result := locationreg.FindStringSubmatch(line)
 			if match == false {
 				locationreg, regexpErr = regexp.Compile(`(^\d+).+地":"([^\s]+)","登`)
@@ -317,9 +317,9 @@ func main() {
 					for num2, v2 := range result2 {
 						if num2/1 == 1 {
 							//fmt.Printf("%s\n", v2)
-							for i := 0; i < CoreNumber; i++ {
-								go LoctionParser(v2, line, UserCore)
-							}
+							//for i := 0; i < CoreNumber; i++ {
+							/*go */ LocationParser(v2, line /*, UserCore*/)
+							//}
 
 						}
 					}
@@ -335,7 +335,6 @@ func main() {
 		}
 		file.Close()
 	}
-
 	end := time.Now()
 
 	//花費時間
