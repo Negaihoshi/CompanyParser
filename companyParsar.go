@@ -7,12 +7,14 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"strconv"
 	"syscall"
 	"time"
 	//"strings"
 )
 
-func LoctionParser(location, readline string) string {
+//Parse District
+func LoctionParser(location string, readline string, c chan int) string {
 
 	if location == "臺北市" {
 		taipeiCityFile, error := os.OpenFile("data/Taipei_City.json", syscall.O_RDWR|syscall.O_APPEND, 0660)
@@ -261,71 +263,81 @@ func LoctionParser(location, readline string) string {
 }
 
 func main() {
-	file, err := os.Open("test.json") // For read access.
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	//開始時間
 	start := time.Now()
-	CoreNumber := runtime.NumCPU()
-	//runtime.GOMAXPROCS(CoreNumber)
-	//UserCore := make(chan float64, CoreNumber)
 
-	//br := bufio.NewReader(file)
-	br := bufio.NewScanner(file)
+	fileTitle := "0000000.json"
+	for i := 0; i < 3; i++ {
+		fileString := strconv.Itoa(i) + fileTitle
 
-	count := 0
-	for br.Scan() {
-
-		line := br.Text()
-
-		//初始化 Regexp
-		match, _ := regexp.MatchString("分公司", line)
-		locationreg, regexpErr := regexp.Compile(`(^\d+).+地":"([^\s]+)","登`)
-		if regexpErr != nil {
-			log.Fatal(regexpErr)
-		}
-		zonereg, zoneregRegexpErr := regexp.Compile(`(^\S\S\S).+`)
-		if zoneregRegexpErr != nil {
-			log.Fatal(zoneregRegexpErr)
+		file, err := os.Open(fileString) // For read access.
+		if err != nil {
+			log.Fatal(err)
 		}
 
-		count++
-		fmt.Println(count)
-		result := locationreg.FindStringSubmatch(line)
-		if match == false {
-			locationreg, regexpErr = regexp.Compile(`(^\d+).+地":"([^\s]+)","登`)
-		} else {
-			locationreg, regexpErr = regexp.Compile(`(^\d+).+地":"([^\s]+)","分`)
-		}
-		result = locationreg.FindStringSubmatch(line)
+		CoreNumber := runtime.NumCPU()
+		fmt.Printf("Use Core Number: %v\n", CoreNumber)
+		runtime.GOMAXPROCS(CoreNumber)
+		UserCore := make(chan int, CoreNumber)
 
-		for num, v := range result {
-			if num/2 == 1 {
+		//br := bufio.NewReader(file)
+		br := bufio.NewScanner(file)
 
-				result2 := zonereg.FindStringSubmatch(v)
-				for num2, v2 := range result2 {
-					if num2/1 == 1 {
-						//fmt.Printf("%s\n", v2)
-						go LoctionParser(v2, line)
-					}
-				}
-				//fmt.Printf("%s\n", v)
+		count := 0
+		for br.Scan() {
+
+			line := br.Text()
+
+			//初始化 Regexp
+			match, _ := regexp.MatchString("分公司", line)
+			locationreg, regexpErr := regexp.Compile(`(^\d+).+地":"([^\s]+)","登`)
+			if regexpErr != nil {
+				log.Fatal(regexpErr)
 			}
+			zonereg, zoneregRegexpErr := regexp.Compile(`(^\S\S\S).+`)
+			if zoneregRegexpErr != nil {
+				log.Fatal(zoneregRegexpErr)
+			}
+
+			count++
+			fmt.Println(count)
+			result := locationreg.FindStringSubmatch(line)
+			if match == false {
+				locationreg, regexpErr = regexp.Compile(`(^\d+).+地":"([^\s]+)","登`)
+			} else {
+				locationreg, regexpErr = regexp.Compile(`(^\d+).+地":"([^\s]+)","分`)
+			}
+			result = locationreg.FindStringSubmatch(line)
+
+			for num, v := range result {
+				if num/2 == 1 {
+
+					result2 := zonereg.FindStringSubmatch(v)
+					for num2, v2 := range result2 {
+						if num2/1 == 1 {
+							//fmt.Printf("%s\n", v2)
+							for i := 0; i < CoreNumber; i++ {
+								go LoctionParser(v2, line, UserCore)
+							}
+
+						}
+					}
+					//fmt.Printf("%s\n", v)
+				}
+			}
+			//fmt.Printf("String = ", result, "\n")
+			//fmt.Printf("%v", result)
+			//fmt.Printf("\n")
 		}
-		//fmt.Printf("String = ", result, "\n")
-		//fmt.Printf("%v", result)
-		//fmt.Printf("\n")
+		if err := br.Err(); err != nil {
+			log.Fatal(err)
+		}
+		file.Close()
 	}
-	if err := br.Err(); err != nil {
-		log.Fatal(err)
-	}
-	file.Close()
 
 	end := time.Now()
 
 	//花費時間
-	fmt.Printf("Use Core Number: %v\n", CoreNumber)
 	fmt.Printf("Spend Time: %vs\n", end.Sub(start).Seconds())
 }
